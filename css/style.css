@@ -1,3 +1,32 @@
+/* styling for the html element */
+html {
+    margin: 3rem;
+    height: 100%;
+    width: 100%;
+}
+
+/* background animation based on https://medium.com/@dovid11564/using-css-animations-to-mimic-the-look-of-a-crt-monitor-3919de3318e2 */
+.crt {
+  background: linear-gradient(to bottom, #000000 50%, #121212 50%);
+  background-size: 100% 10px;  /* thin stripes */
+  background-repeat: repeat;  
+  color: #00ff00;
+  font-family: "Courier New", monospace;
+  text-align: left;
+  text-shadow: 0 0 10px #00ff00;
+}
+
+@media screen {
+  .crt {
+    animation: scanlines 1s linear infinite;
+  }
+}
+
+@keyframes scanlines {
+  from { background-position: 0 0; }
+  to   { background-position: 0 10px; }
+}
+
 td {
     padding: 10px;
     padding-left: 2px;
