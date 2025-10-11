@@ -66,23 +66,23 @@ score = 0
 # and a variable for questions
 question = 0
 
+# if there is a fetching error, the program will terminate
+fetchError = False
+
 # to give user feedback while it loads
 loading = 0
-loading_steps = 7 # number of items loaded
+loading_steps = 9 # number of items loaded
 
 # function to calculate the percentage loaded, this took way longer than anticipated...
 def show_loading_bar(loading, loading_steps):
     bar_length = 50 
     filled_length = int(bar_length * loading // loading_steps)
-    percent = (loading / loading_steps) * 100
+    percent = int((loading / loading_steps) * 100)  # convert to integer to remove decimals
     bar = '█' * filled_length + '-' * (bar_length - filled_length) 
     if loading == loading_steps:
-        print(f'\r[bold white]Loading [/bold white][bold green]{bar} {percent:.2f}%[/bold green]', end="\n")
+        print(f'\r[bold white]Loading [/bold white][bold green]{bar} {percent}%[/bold green]', end="\n")
     else:
-        print(f'\r[bold white]Loading [/bold white][bold red]{bar} {percent:.2f}%[/bold red]', end="\r")
-
-# if there is a fetching error, the program will terminate
-fetchError = False
+        print(f'\r[bold white]Loading [/bold white][bold red]{bar} {percent}%[/bold red]', end="\r")
 
 while question == 0:
     answer = input().strip().lower()
@@ -90,7 +90,6 @@ while question == 0:
     if answer in ["play", "y", "yes"]:
         break
     elif answer in ["exit", "quit", "n", "no"]:
-        print("Good bye!")
         question = 4
         break
     else:
@@ -118,152 +117,228 @@ q1option = []
 q2option = []
 q3option = []
 
+# dictionary of pollutants available in the iaqi
+pollutants = {
+    'co': 'Carbon Monoxide',
+    'no2': 'Nitrogen Dioxide',
+    'o3': 'Ozone',
+    'pm25': 'Particulate Matter (≤ 2.5 µm)',
+    'pm10': 'Particulate Matter (≤ 10 µm)',
+    'so2': 'Sulfur Dioxide'
+    }
+
 # QUESTION 1------------------------------------------------------------------------------------------------------------------------------------
 
-for item in randomCities_Q1:
-    # get the city from the random selection
-    randomCity_Q1 = cities[item]['city']
-    randomCountry_Q1 = cities[item]['country']
+if question != 4 and not fetchError:
+    for item in randomCities_Q1:
+    
+        # get the city from the random selection
+        randomCity_Q1 = cities[item]['city']
+        randomCountry_Q1 = cities[item]['country']
 
+        try:
+            # this is the get request for the API, which takes the url and fills the rest in with my API key and the keyword request
+            response_Q1 = requests.get(url, params={"token": token, "keyword": randomCity_Q1})
+
+            # after getting the response from the API, we will convert it into json so that we can access the data
+            results_Q1 = response_Q1.json()
+
+            # access the relevant data
+            responseData_Q1 = results_Q1['data']
+
+            # filter out stations with no AQI
+            responseData_Q1 = [s for s in responseData_Q1 if s['aqi'] != '-']
+
+            # prefer stations with city key if possible
+            preferred_stations_Q1 = [s for s in responseData_Q1 if 'city' in s['station']]
+
+            # picks the first preferred station, fallback to first available
+            if preferred_stations_Q1:
+                station_Q1 = preferred_stations_Q1[0]
+            elif responseData_Q1:
+                station_Q1 = responseData_Q1[0]
+            else:
+                fetchError = True
+                question = 4
+                print("Error fetching AQI data")
+                continue    
+
+            # get the unique city ID for detailed feed
+            city_id_Q1 = station_Q1['uid']
+            url_feed_Q1 = f"https://api.waqi.info/feed/@{city_id_Q1}"
+
+            # request the detailed feed for the city
+            response_feed_Q1 = requests.get(url_feed_Q1, params={"token": token})
+            results_feed_Q1 = response_feed_Q1.json()
+            response_data_feed_Q1 = results_feed_Q1['data']
+
+            # extract the AQI
+            aqi_Q1 = response_data_feed_Q1['aqi']
+
+            # store city, country, AQI, and top pollutants in the list
+            q1option.append({
+                "city": randomCity_Q1,
+                "country": randomCountry_Q1,
+                "aqi": aqi_Q1
+            })
+
+            # this prints a loading percentages because the program takes a while to fetch all the data
+            loading += 1
+            if loading > loading_steps:
+                loading = loading_steps
+            show_loading_bar(loading, loading_steps)        
+
+
+        # print error if data fetch fails
+        except Exception as e:
+            fetchError = True
+            question = 4
+            print("Error fetching AQI data")
+
+
+    # calculates the higest AQI
+    def get_aqi(q1option):
+        return q1option['aqi']
+
+    q1answer = max(q1option, key=get_aqi)
+
+
+# QUESTION 3 - loads before for redundancy------------------------------------------------------------------------------------------------------
+
+if question != 4 and not fetchError:
+    # pick one pollutant for all cities in this question
+    randomPol = random.choice(list(pollutants.keys()))
+
+    for item in randomCities_Q3:
+        randomCity_Q3 = cities[item]['city']
+        randomCountry_Q3 = cities[item]['country']
+
+        try:
+            # search API for city
+            response_Q3 = requests.get(url, params={"token": token, "keyword": randomCity_Q3})
+            results_Q3 = response_Q3.json()
+            responseData_Q3 = results_Q3.get('data', [])
+
+            if not responseData_Q3:
+                fetchError = True
+                question = 4
+                print("Error fetching AQI data")
+                continue
+
+            # prefer stations with 'city' key
+            preferred_stations_Q3 = [s for s in responseData_Q3 if 'city' in s['station']]
+            stations_to_try = preferred_stations_Q3 if preferred_stations_Q3 else responseData_Q3
+
+            station_found = False
+            for station in stations_to_try:
+                try:
+                    city_id_Q3 = station['uid']
+                    url_feed_Q3 = f"https://api.waqi.info/feed/@{city_id_Q3}"
+                    response_feed_Q3 = requests.get(url_feed_Q3, params={"token": token})
+                    results_feed_Q3 = response_feed_Q3.json()
+                    response_data_feed_Q3 = results_feed_Q3.get('data', {})
+                    iaqi_data = response_data_feed_Q3.get('iaqi', {})
+
+                    if randomPol in iaqi_data:
+                        iaqi_Q3 = iaqi_data[randomPol]['v']
+                        q3option.append({
+                            "city": randomCity_Q3,
+                            "country": randomCountry_Q3,
+                            "poll": iaqi_Q3
+                        })
+                        station_found = True
+                        break  # exit loop once a valid station is found
+                except Exception:
+                    continue  # try next station
+
+            if not station_found:
+                fetchError = True
+                question = 4
+                print("Error fetching AQI data")
+                continue
+
+            # update loading bar
+            loading += 1
+            if loading > loading_steps:
+                loading = loading_steps
+            show_loading_bar(loading, loading_steps)
+
+        except Exception as e:
+            fetchError = True
+            question = 4
+            print("Error fetching AQI data")
+            break
+
+    # calculate the highest AQI
+    def get_q3pol(city):
+        return city['poll']
+
+    q3answer = max(q3option, key=get_q3pol)
+
+# QUESTION 2------------------------------------------------------------------------------------------------------------------------------------
+
+if question != 4 and not fetchError:
     try:
-        # this is the get request for the API, which takes the url and fills the rest in with my API key and the keyword request
-        response_Q1 = requests.get(url, params={"token": token, "keyword": randomCity_Q1})
-
-        # after getting the response from the API, we will convert it into json so that we can access the data
-        results_Q1 = response_Q1.json()
+        # get request for the API with token and city keyword
+        response_Q2 = requests.get(url, params={"token": token, "keyword": randomCity_Q2})
+        results_Q2 = response_Q2.json()
 
         # access the relevant data
-        responseData_Q1 = results_Q1['data']
+        responseData_Q2 = results_Q2['data']
 
         # filter out stations with no AQI
-        responseData_Q1 = [s for s in responseData_Q1 if s['aqi'] != '-']
+        responseData_Q2 = [s for s in responseData_Q2 if s['aqi'] != '-']
 
         # prefer stations with city key if possible
-        preferred_stations_Q1 = [s for s in responseData_Q1 if 'city' in s['station']]
+        preferred_stations_Q2 = [s for s in responseData_Q2 if 'city' in s['station']]
 
         # picks the first preferred station, fallback to first available
-        if preferred_stations_Q1:
-            station_Q1 = preferred_stations_Q1[0]
-        elif responseData_Q1:
-            station_Q1 = responseData_Q1[0]
+        if preferred_stations_Q2:
+            station_Q2 = preferred_stations_Q2[0]
+        elif responseData_Q2:
+            station_Q2 = responseData_Q2[0]
         else:
             print("Error fetching AQI data")
-            continue
+            question = 4
+            fetchError = True
+            raise Exception("No valid station found")
 
         # get the unique city ID for detailed feed
-        city_id_Q1 = station_Q1['uid']
-        url_feed_Q1 = f"https://api.waqi.info/feed/@{city_id_Q1}"
+        city_id_Q2 = station_Q2['uid']
+        url_feed_Q2 = f"https://api.waqi.info/feed/@{city_id_Q2}"
 
         # request the detailed feed for the city
-        response_feed_Q1 = requests.get(url_feed_Q1, params={"token": token})
-        results_feed_Q1 = response_feed_Q1.json()
-        response_data_feed_Q1 = results_feed_Q1['data']
+        response_feed_Q2 = requests.get(url_feed_Q2, params={"token": token})
+        results_feed_Q2 = response_feed_Q2.json()
+        response_data_feed_Q2 = results_feed_Q2['data']
 
-        # extract the AQI
-        aqi_Q1 = response_data_feed_Q1['aqi']
+        # extract dominant pollutant
+        q2answer = response_data_feed_Q2.get('dominentpol', '').strip().lower()
 
-        # store city, country, AQI, and top pollutants in the list
-        q1option.append({
-            "city": randomCity_Q1,
-            "country": randomCountry_Q1,
-            "aqi": aqi_Q1
-        })
+        # verify pollutant exists
+        if q2answer not in pollutants:
+            print("Error fetching AQI data")
+            question = 4
+            fetchError = True
+        else:
+            # build options list
+            q2option = [q2answer]
+            other_options_Q2 = [p for p in pollutants.keys() if p != q2answer]
+            q2option.extend(random.sample(other_options_Q2, 3))
+            random.shuffle(q2option)
 
-        # this prints a loading percentages because the program takes a while to fetch all the data
-        loading += 1
-        if loading > loading_steps:
-            loading = loading_steps
-        show_loading_bar(loading, loading_steps)
-        
-
+            #adds to loading bar
+            show_loading_bar(loading_steps, loading_steps)
+            if fetchError == True:
+                question = 4
+            else:
+                question += 1
 
     # print error if data fetch fails
     except Exception as e:
         print("Error fetching AQI data")
         question = 4
         fetchError = True
-
-
-# calculates the higest AQI
-def get_aqi(q1option):
-    return q1option['aqi']
-
-q1answer = max(q1option, key=get_aqi)
-
-
-# QUESTION 2------------------------------------------------------------------------------------------------------------------------------------
-
-try:
-    # get request for the API with token and city keyword
-    response_Q2 = requests.get(url, params={"token": token, "keyword": randomCity_Q2})
-    results_Q2 = response_Q2.json()
-
-    # access the relevant data
-    responseData_Q2 = results_Q2['data']
-
-    # filter out stations with no AQI
-    responseData_Q2 = [s for s in responseData_Q2 if s['aqi'] != '-']
-
-    # prefer stations with city key if possible
-    preferred_stations_Q2 = [s for s in responseData_Q2 if 'city' in s['station']]
-
-    # picks the first preferred station, fallback to first available
-    if preferred_stations_Q2:
-        station_Q2 = preferred_stations_Q2[0]
-    elif responseData_Q2:
-        station_Q2 = responseData_Q2[0]
-    else:
-        print("Error fetching AQI data")
-        question = 4
-        raise Exception("No valid station found")
-
-    # get the unique city ID for detailed feed
-    city_id_Q2 = station_Q2['uid']
-    url_feed_Q2 = f"https://api.waqi.info/feed/@{city_id_Q2}"
-
-    # request the detailed feed for the city
-    response_feed_Q2 = requests.get(url_feed_Q2, params={"token": token})
-    results_feed_Q2 = response_feed_Q2.json()
-    response_data_feed_Q2 = results_feed_Q2['data']
-
-    # extract dominant pollutant
-    q2answer = response_data_feed_Q2.get('dominentpol', '').strip().lower()
-
-    # dictionary of pollutants available in the iaqi
-    pollutants_Q2 = {
-        'co': 'Carbon Monoxide',
-        'no2': 'Nitrogen Dioxide',
-        'o3': 'Ozone',
-        'pm25': 'Particulate Matter (≤ 2.5 µm)',
-        'pm10': 'Particulate Matter (≤ 10 µm)',
-        'so2': 'Sulfur Dioxide'
-    }
-
-    # verify pollutant exists
-    if q2answer not in pollutants_Q2:
-        print("Error fetching AQI data")
-        question = 4
-        fetchError = True
-    else:
-        # build options list
-        q2option = [q2answer]
-        other_options_Q2 = [p for p in pollutants_Q2.keys() if p != q2answer]
-        q2option.extend(random.sample(other_options_Q2, 3))
-        random.shuffle(q2option)
-
-        show_loading_bar(loading_steps, loading_steps)
-        question += 1
-
-# print error if data fetch fails
-except Exception as e:
-    print("Error fetching AQI data")
-    question = 4
-    fetchError = True
-
-
-# QUESTION 3------------------------------------------------------------------------------------------------------------------------------------
-
-
 
 # QUESTION LOOPS------------------------------------------------------------------------------------------------------------------------------------
 
@@ -352,13 +427,12 @@ while question == 2:
                         [bold white on green]Correct![/bold white on green]
               
               The highest pollutant in [bold blue]{randomCity_Q2}[/bold blue] is
-              [bold white on blue]{q2answer.upper()} - {pollutants_Q2[q2answer]}[/bold white on blue]
+              [bold white on blue]{q2answer.upper()} - {pollutants[q2answer]}[/bold white on blue]
               ''')
         question += 1
         score += 1
         break
     elif answer in ["exit", "quit"]:
-        print("Good bye!")
         question = 4
         break
     else:
@@ -366,7 +440,7 @@ while question == 2:
                         [bold white on red]Wrong![/bold white on red]
               
               The highest pollutant in [bold blue]{randomCity_Q2}[/bold blue] is
-              [bold white on blue]{q2answer.upper()} - {pollutants_Q2[q2answer]}[/bold white on blue]
+              [bold white on blue]{q2answer.upper()} - {pollutants[q2answer]}[/bold white on blue]
               ''')
         question += 1
         break
@@ -376,7 +450,7 @@ while question == 3:
     # prints question 2 in a table from rich
     console.print(text2art("Question  3"), style = "bold yellow", highlight=False)
     q2table = Table(
-        title = f'[bold]What is the highest pollutant of [/bold][bold blue]{randomCity_Q2}, {randomCountry_Q2}[/bold blue][bold]?[/bold]',
+        title = f'[bold]Which city hast the highest concentration of [/bold][bold blue]{randomPol.upper()} - {pollutants[randomPol]}[/bold blue][bold]?[/bold]',
         show_header = False,
         pad_edge = True,
         padding = (1,2),
@@ -387,59 +461,73 @@ while question == 3:
     q2table.add_column("", style = None)
     q2table.add_column("", style = None)
 
-    q2table.add_row(f'[bold black on blue] 1 [/bold black on blue][bold blue on white]  {q2option[0].strip().upper()} [/bold blue on white]',
-                    f'[bold black on blue] 2 [/bold black on blue][bold blue on white] {q2option[1].strip().upper()} [/bold blue on white]')
-    q2table.add_row(f'[bold black on blue] 3 [/bold black on blue][bold blue on white] {q2option[2].strip().upper()} [/bold blue on white]',
-                    f'[bold black on blue] 4 [/bold black on blue][bold blue on white] {q2option[3].strip().upper()} [/bold blue on white]')
+    q2table.add_row(f'[bold black on blue] 1 [/bold black on blue][bold blue on white]  {q3option[0]['city']} [/bold blue on white]',
+                    f'[bold black on blue] 2 [/bold black on blue][bold blue on white] {q3option[1]['city']} [/bold blue on white]')
+    q2table.add_row(f'[bold black on blue] 3 [/bold black on blue][bold blue on white] {q3option[2]['city']} [/bold blue on white]',
+                    f'[bold black on blue] 4 [/bold black on blue][bold blue on white] {q3option[3]['city']} [/bold blue on white]')
 
     print(Padding(q2table, (0,0,0,10)))
 
     answer = input().strip().lower()
 
-    if answer == q2answer.strip().lower() or (
-        answer.isdigit() and int(answer) - 1 == q2option.index(q2answer)
+    if answer == q3answer['city'].strip().lower() or (
+        answer.isdigit() and int(answer) - 1 == q3option.index(q3answer)
     ):
         print(f'''
                         [bold white on green]Correct![/bold white on green]
               
-              The highest pollutant in [bold blue]{randomCity_Q2}[/bold blue] is
-              [bold white on blue]{q2answer.upper()} - {pollutants_Q2[q2answer]}[/bold white on blue]
+              The city with highest concentration of [bold blue]{randomPol.upper()}[/bold blue] is
+                            [bold white on blue]{q3answer['city']}[/bold white on blue]
               ''')
         question += 1
         score += 1
         break
     elif answer in ["exit", "quit"]:
-        print("Good bye!")
         question = 4
         break
     else:
         print(f'''
                         [bold white on red]Wrong![/bold white on red]
               
-              The highest pollutant in [bold blue]{randomCity_Q2}[/bold blue] is
-              [bold white on blue]{q2answer.upper()} - {pollutants_Q2[q2answer]}[/bold white on blue]
+              The city with highest concentration of [bold blue]{randomPol.upper()}[/bold blue] is
+                            [bold white on blue]{q3answer['city']}[/bold white on blue]
               ''')
         question += 1
         break
 
+# for the winning messages
 while question == 4:
-    if score == 3:
-            console.print(text2art("CONGRATULATIONS", font="starwars"), style = "bold yellow", highlight=False)        
-            print('''
-                        You guessed all the answers right.
-                  Now go outside and breath all the air you won!
+    if fetchError == False:
+        if score == 3:
+                console.print(text2art("CONGRATULATIONS", font="starwars"), style = "bold yellow", highlight=False)        
+                print('''
+                You guessed [bold yellow]all the answers[/bold yellow] right.
+            Now go outside and breath all the air you won!
 
 
-                  ''')
-            console.print(text2art("GOOD BYE", font="straight"), style = "bold blue", highlight=False)        
-    elif score :
-            console.print(text2art("CONGRATULATIONS", font="starwars"), style = "bold yellow", highlight=False)        
-            print('''
-                        You guessed some of the answers.
-                  You can go outside and breath the air you won,
-                                nothing more!
+                    ''')
+                console.print(text2art("GOOD BYE", font="straight"), style = "bold blue", highlight=False)        
+        elif score == 0:
+                console.print(text2art("Booooo", font="starwars"), style = "bold blue", highlight=False)        
+                print(f'''
+              You guessed [bold red]no answers[/bold red] right?
+           I guess you can breath a little air...
+                        somewhere...
+                           else...
 
 
-                  ''')
-            console.print(text2art("GOOD BYE", font="straight"), style = "bold blue", highlight=False)        
+                    ''')
+                console.print(text2art("GOOD BYE", font="straight"), style = "bold blue", highlight=False)
+        else:
+                console.print(text2art("WOW", font="starwars"), style = "bold green", highlight=False)        
+                print(f'''
+         You guessed only [bold green]{score}[/bold green] of the answers.
+    You can go outside and breath the air you won.
+                    Nothing more!
+
+
+                    ''')
+                console.print(text2art("GOOD BYE", font="straight"), style = "bold blue", highlight=False)
+    else:
+        print('[bold red]Sorry, there was an error fetching WAQI data, please try again!:heart:[/bold red]')
     break
