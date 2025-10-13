@@ -1,45 +1,24 @@
 import requests
 import random
-
-# imports a dictionary of 50 cities
 import json
 
+from rich import print
+from rich import box
+from rich.padding import Padding
+from rich.table import Table
+from rich.console import Console
+console = Console()
+
+# load local cities file
 with open("project_1/cities.json", "r", encoding="utf-8") as f:
     cities = json.load(f)
 
-# this one will be used for question 2
-randomCities2 = random.randint(1, len(cities) - 1)
-randomCity2 = cities[randomCities2]['city']
-randomCountry2 = cities[randomCities2]['country']
+# this one, well, you guessed it...
+randomCities_Q3 = random.sample(range(len(cities)), 4)
 
 # personal API token
 token = '857f95d7ebcf73e281afac1f85325761f53404a5'
-
-    # url string used to get the request
 url = "https://api.waqi.info/search/"
-
-
-# this is the get request for the API, which takes the url and fills the rest in with my API key and the keyword request
-response = requests.get(url, params={"token": token, "keyword": randomCity2})
-
-# after getting the response from the API, we will convert it into json so that we can access the data
-results = response.json()
-# access the relevant data
-responseData = results['data']
-# get the unique city ID for detailed feed
-city_id = responseData[0]['uid']
-# city_id = 3307
-url_feed = f"https://api.waqi.info/feed/@{city_id}"
-# request the detailed feed for the city
-response_feed = requests.get(url_feed, params={"token": token})
-results_feed = response_feed.json()
-response_data_feed = results_feed['data']
-
-# print(f'{randomCity2}, {randomCountry2}')
-print(randomCity2,response_data_feed['iaqi'])
-
-q3answer = response_data_feed['dominentpol']
-q3option = [q3answer]
 
 # dictionary of pollutants available in the iaqi
 pollutants = {
@@ -51,92 +30,112 @@ pollutants = {
     'so2': 'Sulfur Dioxide'
 }
 
-# adds 3 random pollutants that are not the dominant one
-other_options = [p for p in pollutants.keys() if p != q3answer.strip().lower()]
-q3option.extend(random.sample(other_options, 3))
-
-# shuffles the list
-random.shuffle(q3option)
-
-print(q3option[0].strip().upper())
-print(q3answer)
-print(f'{q3answer.upper()} - {pollutants[q3answer]}')
 
 
-# print(response_data_feed['dominentpol'])
+randomCity_Q3 = "montreal"
 
+# this is the get request for the API, which takes the url and fills the rest in with my API key and the keyword request
+response_Q3 = requests.get(url, params={"token": token, "keyword": randomCity_Q3})
 
+# after getting the response from the API, we will convert it into json so that we can access the data
+results_Q3 = response_Q3.json()
 
-# # filter only real pollutants
-# filtered = {k: v['v'] for k, v in data.items() if k in pollutants}
+# access the relevant data
+responseData_Q3 = results_Q3['data']
 
-# # get 4 largest
-# top4 = sorted(filtered.items(), key=lambda x: x[1], reverse=True)[:4]
+# # filter out stations with no AQI
+# responseData_Q3 = [s for s in responseData_Q3 if s['iaqi'][randomPol] != '-']
 
+# # prefer stations with city key if possible
+# preferred_stations_Q3 = [s for s in responseData_Q3 if 'city' in s['station']]
 
-# for pol, val in top4:
-#     print(f"{pol}: {val}")
+# # get the unique city ID for detailed feed
+city_id_Q3 = responseData_Q3[0]['uid']
+url_feed_Q3 = f"https://api.waqi.info/feed/@{city_id_Q3}"
 
-
-
-
-
-
+# # request the detailed feed for the city
+response_feed_Q3 = requests.get(url_feed_Q3, params={"token": token})
+results_feed_Q3 = response_feed_Q3.json()
+response_data_feed_Q3 = results_feed_Q3['data']
+# extract the AQI
+print(response_data_feed_Q3['aqi'])
 
 
 
 
 
 
-# import requests
 
-# randomCity = "new york"
 
-# # personal API token
-# token = '857f95d7ebcf73e281afac1f85325761f53404a5'
 
-# # base URL for the search
-# url = "https://api.waqi.info/search/"
 
-# # 1. make the search request
-# response = requests.get(url, params={"token": token, "keyword": randomCity})
-# results = response.json()
+if question != 4:
+    for item in randomCities_Q3:
+        # get the city from the random selection
+        randomCity_Q3 = cities[item]['city']
+        randomCountry_Q3 = cities[item]['country']
 
-# # 2. get the list of all stations for that city
-# responseData = results["data"]
+        # gets a random pollutant
+        randomPol = random.choice(list(pollutants.keys()))
 
-# # 3. go through each station until we find one that actually has pollutant data
-# city_id = None
-# for item in responseData:
-#     uid = item["uid"]
-#     url_feed = f"https://api.waqi.info/feed/@{uid}"
-#     feed = requests.get(url_feed, params={"token": token}).json()
-    
-#     # if the feed has pollutant data, use this one
-#     if "iaqi" in feed.get("data", {}):
-#         city_id = uid
-#         response_data_feed = feed["data"]
-#         break  # stop once we find the first valid one
 
-# if city_id is None:
-#     print("No data found for this city.")
-# else:
-#     # 4. get AQI
-#     aqi = response_data_feed.get("aqi", "N/A")
+        try:
+            # this is the get request for the API, which takes the url and fills the rest in with my API key and the keyword request
+            response_Q3 = requests.get(url, params={"token": token, "keyword": randomCity_Q3})
 
-#     # 5. extract pollutant data safely
-#     pollutants = response_data_feed.get("iaqi", {})
-#     pollutant_values = {}
+            # after getting the response from the API, we will convert it into json so that we can access the data
+            results_Q3 = response_Q3.json()
 
-#     for p, v in pollutants.items():
-#         if "v" in v:
-#             pollutant_values[p] = v["v"]
+            # access the relevant data
+            responseData_Q3 = results_Q3['data']
 
-#     # 6. sort by value, get top 4
-#     top4 = sorted(pollutant_values.items(), key=lambda x: x[1], reverse=True)[:4]
+            # filter out stations with no AQI
+            responseData_Q3 = [s for s in responseData_Q3 if s['iaqi'][randomPol] != '-']
 
-#     # 7. print results
-#     print(f"{randomCity.title()} AQI: {aqi}")
-#     print("Top pollutants:")
-#     for name, value in top4:
-#         print(f" - {name}: {value}")
+            # prefer stations with city key if possible
+            preferred_stations_Q3 = [s for s in responseData_Q3 if 'city' in s['station']]
+
+            # picks the first preferred station, fallback to first available
+            if preferred_stations_Q3:
+                station_Q3 = preferred_stations_Q3[0]
+            elif responseData_Q3:
+                station_Q3 = responseData_Q3[0]
+            else:
+                print("Error fetching AQI data")
+                continue
+
+            # get the unique city ID for detailed feed
+            city_id_Q3 = station_Q3['uid']
+            url_feed_Q3 = f"https://api.waqi.info/feed/@{city_id_Q3}"
+
+            # request the detailed feed for the city
+            response_feed_Q3 = requests.get(url_feed_Q3, params={"token": token})
+            results_feed_Q3 = response_feed_Q3.json()
+            response_data_feed_Q3 = results_feed_Q3['data']
+
+            # extract the AQI
+            iaqi_Q3 = response_data_feed_Q3['iaqi'][randomPol]
+
+            # store city, country, AQI, and top pollutants in the list
+            Q3option.append({
+                "city": randomCity_Q3,
+                "country": randomCountry_Q3,
+                "poll": iaqi_Q3
+            })
+
+            # this prints a loading percentages because the program takes a while to fetch all the data
+            loading += 1
+            if loading > loading_steps:
+                loading = loading_steps
+            show_loading_bar(loading, loading_steps)  
+        
+
+        # print error if data fetch fails
+        except Exception as e:
+            print("Error fetching AQI data")
+
+    # calculates the higest AQI
+    def get_q3pol(Q3option):
+        return q3option['iaqi'][randomPol]
+
+    q3answer = max(q3option, key=get_q3pol)
