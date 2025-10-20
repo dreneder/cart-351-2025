@@ -98,7 +98,7 @@ while question == 0:
 # imports a dictionary of 50 cities
 import json
 
-with open("project_1/cities.json", "r", encoding="utf-8") as f:
+with open("cities.json", "r", encoding="utf-8") as f:
     cities = json.load(f)
 
 # generating random number for four cities
