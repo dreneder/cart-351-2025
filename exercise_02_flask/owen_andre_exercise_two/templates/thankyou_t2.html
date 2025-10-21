@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+ 
+{% block content %}
+    <section>
+        <h3 class="title_1">Thank you for picking!</h3>
+        <!-- This parses through the information from the form -->
+        <h1 style="text-align:center">
+            Your life now consists of a <span class = "highlight">{{pickDog}} Dog</span>, <span class = "highlight">{{pickDonut}} Donuts</span> and <span class = "highlight">{{pickIceCream}} Ice Cream</span>.
+            <br/>Here is more or less how it looks:
+        </h1>
+        <!-- displays the dog image depending on the choice -->
+        <div class="endDogDonut">
+            <img class="dogImage" src = "{{url_for('static' , filename ='images/'+imgPath)}}"/>
+        </div>
+        
+</section>
+{% endblock %}

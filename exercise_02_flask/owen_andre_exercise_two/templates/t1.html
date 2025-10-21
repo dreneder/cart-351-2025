@@ -1,0 +1,51 @@
+<!-- Owen & Andre -->
+{%extends "base.html"%}
+
+{% block content %}
+
+
+    <h1 title class = "title_1"> The dogs will evaluate if they like {{the_topic}} </h1>
+
+    <!-- use the dogs bc funny -->
+    <div style="margin-left: auto;margin-right: auto;" class = "img_div">
+        <img height="50%" src = ../static/images/PINEAPPLEDOG.png / width="600" >
+        <img height="150%" src = ../static/images/LONGDOG.png / width="315"">
+    </div>
+
+
+    <!-- Use if -->
+    {% if "donuts" != "{{the_topic}}" %}
+        <p style="text-align: center;">The dogs like the {{the_topic}}</p>
+    {% endif %}
+
+    <!-- divider -->
+    <h1 title class = "title_1"> __ </h1>
+
+
+
+    <!-- Use forloop for both subarrays of dict,  -->
+    <p>The different donut flavours are</p>
+    <!-- format extra thing to make lists look nicer -->
+    <div class = "list_1">
+        {% for item in donut_data["flavours"] %}
+        <!-- add the item to a text block -->
+        <p style="text-indent: 1cm;"> {{item}}</p>
+        {% endfor %}
+    </div>
+    <!-- repeat for other lists -->
+
+    <p>The different donut toppings are</p>
+    <div class = "list_1">
+    {% for item in donut_data["toppings"] %}
+        <p style="text-indent: 1cm;"> {{item}}</p>
+    {% endfor %}
+    </div>
+
+    <p>The different Ice Cream flavours are</p>
+    <div class = "list_1">
+    {% for item in icecream_flavors %}
+        <p style="text-indent: 1cm;"> {{item}}</p>
+    {% endfor %}
+    </div>
+
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+ 
+{% block content %}
+
+<form id = "collect_dog_donut" action = "{{url_for('thankyou_t2')}}">
+    <div class="dropdownBoxes">
+         <h3 class="title_1">Pick your Dog and Donut</h3>
+         <label for="pickDog">What does your dog like sniffing?</label>
+        <select id="pickDog" name="selectDog">
+            <option value="Countryside">Countryside</option>
+            <option value="Pineapple">Pineapple</option>
+        </select>
+         <label for="pickDonut">What is your favorite kind of donut?</label>
+         <select id="pickDonut" name="selectDonut">
+            <!-- parses though the donut dictionary -->
+            {% for topping in donut_data.toppings %}
+             <option value="{{ topping }}">{{ topping }}</option>
+            {% endfor %}
+        </select>
+         <label for="pickIceCream">What is your favorite kind of ice cream?</label>
+        <select id = "pickIceCream" name="selectIceCream">
+            <!-- parses though the ice cream list -->
+            {% for flavor in icecream_flavors %}
+            <option value="{{ flavor }}">{{ flavor }}</option>
+            {% endfor %}
+        </select>
+        <input id = "submitDogDonut" type = "submit" name = "submit" value = "Submit" id =buttonS />
+</form>
+    </div>
+{% endblock %}
