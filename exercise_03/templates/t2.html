@@ -1,0 +1,25 @@
+<!-- will be a child of base-->
+{% extends "base.html" %}
+ 
+<!-- js for this page-->
+{% block scriptblock %}
+
+<head>
+    <script src="static/js/libraries/p5.min.js"></script>
+    <script src="static/js/libraries/p5.sound.min.js"></script>
+    <script src="static/js/script.js"></script>
+</head>
+
+{% endblock %}
+ 
+{% block content %}
+<div class="headContent">
+    <h3>DAY AND NIGHT</h3>
+    <p>Click at any point of the canvas to record the hour of the day and the moon phase</p>
+</div>
+    <div id="p5Container"></div>
+    <div class="headContent">
+        <h3>Last recorded time and moon:</h3>
+        <h3 id="lastHour"></h3>
+    </div>
+{% endblock %}
